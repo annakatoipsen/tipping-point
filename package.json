@@ -1,0 +1,19 @@
+{
+  "name": "smart-compound-calculator",
+  "version": "1.0.0",
+  "description": "A smart compound interest calculator with advanced features",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": ["finance", "calculator", "compound-interest", "wealth"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "readline-sync": "^1.4.10",
+    "chalk": "^5.3.0",
+    "table": "^6.8.1"
+  }
+}
