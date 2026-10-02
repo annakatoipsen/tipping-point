@@ -175,7 +175,7 @@ class SmartCalculatorCLI {
       ['Final Balance', formatCurrency(result.finalBalance)],
       ['Total Contributions', formatCurrency(result.totalContributions)],
       ['Total Interest Earned', formatCurrency(result.totalInterest)],
-      ['Effective Annual Return', formatPercent(result.effectiveAnnualRate)]
+      ['Effective Annual Rate', formatPercent(result.effectiveAnnualRate)]
     ];
 
     console.log(table(summaryData, {
@@ -208,14 +208,15 @@ class SmartCalculatorCLI {
   displayScenarioComparison(results) {
     console.log(chalk.green('\n📊 Scenario Comparison:'));
     
-    const data = [['Scenario', 'Final Balance', 'Total Interest', 'Effective Rate']];
+    const data = [['Scenario', 'Final Balance', 'Total Interest', 'Effective Rate', 'Interest / Paid In']];
     
     results.forEach(result => {
       data.push([
         result.name,
         formatCurrency(result.finalBalance),
         formatCurrency(result.totalInterest),
-        formatPercent(result.effectiveAnnualRate)
+        formatPercent(result.effectiveAnnualRate),
+        formatPercent(result.totalContributions > 0 ? Math.round(result.totalInterest / result.totalContributions * 10000) / 100 : 0)
       ]);
     });
 

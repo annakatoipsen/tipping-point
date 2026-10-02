@@ -6,9 +6,10 @@ class CompoundInterestCalculator {
     years,
     compoundingFrequency = 12
   }) {
-    const monthlyRate = annualRate / 100 / 12;
     const totalMonths = years * 12;
-    const compoundingPerMonth = compoundingFrequency / 12;
+    // Monthly growth factor equivalent to compounding `compoundingFrequency` times a year,
+    // so quarterly, annual and daily compounding give the correct yearly result
+    const monthlyGrowth = Math.pow(1 + annualRate / 100 / compoundingFrequency, compoundingFrequency / 12);
     
     let balance = principal;
     const yearlyBreakdown = [];
@@ -18,10 +19,7 @@ class CompoundInterestCalculator {
       
       for (let month = 1; month <= 12; month++) {
         balance += monthlyContribution;
-        
-        for (let compound = 0; compound < compoundingPerMonth; compound++) {
-          balance *= (1 + (monthlyRate / compoundingPerMonth));
-        }
+        balance *= monthlyGrowth;
       }
       
       const yearEnd = balance;
@@ -91,8 +89,9 @@ class CompoundInterestCalculator {
     const futureValueOfPrincipal = principal * Math.pow(1 + monthlyRate, totalMonths);
     const remainingAmount = targetAmount - futureValueOfPrincipal;
     
-    const monthlyPayment = remainingAmount / 
-      (((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate));
+    // Contributions are added at the start of each month (as in calculate()), so this is an annuity due
+    const monthlyPayment = remainingAmount /
+      (((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate) * (1 + monthlyRate));
     
     return Math.round(monthlyPayment * 100) / 100;
   }

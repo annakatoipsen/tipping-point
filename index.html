@@ -142,13 +142,13 @@
                     </div>
                 </div>
 
-                <div class="tabs" role="tablist">
-                    <button class="tab active" data-tab="basic">Overview</button>
-                    <button class="tab" data-tab="goal">Goal planning</button>
-                    <button class="tab" data-tab="required">Required savings</button>
+                <div class="tabs" role="tablist" aria-label="Calculator">
+                    <button class="tab active" id="tab-basic" role="tab" aria-selected="true" aria-controls="basic-content" data-tab="basic">Overview</button>
+                    <button class="tab" id="tab-goal" role="tab" aria-selected="false" aria-controls="goal-content" tabindex="-1" data-tab="goal">Goal planning</button>
+                    <button class="tab" id="tab-required" role="tab" aria-selected="false" aria-controls="required-content" tabindex="-1" data-tab="required">Required savings</button>
                 </div>
 
-                <div class="tab-content active" id="basic-content">
+                <div class="tab-content active" id="basic-content" role="tabpanel" aria-labelledby="tab-basic">
                     <div class="results-section">
                         <div class="result-card primary">
                             <h3>Final balance</h3>
@@ -205,7 +205,7 @@
                     </div>
                 </div>
 
-                <div class="tab-content" id="goal-content">
+                <div class="tab-content" id="goal-content" role="tabpanel" aria-labelledby="tab-goal">
                     <div class="goal-inputs">
                         <div class="input-group">
                             <label for="target">Target amount</label>
@@ -224,7 +224,7 @@
                     </div>
                 </div>
 
-                <div class="tab-content" id="required-content">
+                <div class="tab-content" id="required-content" role="tabpanel" aria-labelledby="tab-required">
                     <div class="required-inputs">
                         <div class="input-group">
                             <label for="req-target">Target amount</label>

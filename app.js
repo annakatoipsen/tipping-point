@@ -229,7 +229,7 @@ class SmartCalculatorApp {
                 <span class="result-value">${this.formatCurrency(result.totalInterest)}</span>
             </div>
             <div class="result-item">
-                <span class="result-label">Effective Annual Return</span>
+                <span class="result-label">Effective Annual Rate</span>
                 <span class="result-value">${result.effectiveAnnualRate}%</span>
             </div>
             <div class="result-item">

@@ -1,4 +1,12 @@
 import CompoundInterestCalculator from './calculator.js';
+import { addYearlyContributions, describeCrossover } from './insights.js';
+
+const percentFormat = new Intl.NumberFormat('en-GB', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+});
+
+const CHART_FONT = 'Inter';
 
 class WebCalculatorApp {
     constructor() {
@@ -6,14 +14,23 @@ class WebCalculatorApp {
         this.yearlyChart = null;
         this.lastBreakdown = null;
         this.currency = this.loadCurrency();
+        this.buildFormatters();
         document.getElementById('currency-select').value = this.currency;
         this.applyCurrencyLabels();
         this.initializeEventListeners();
         this.calculate(); // Initial calculation
 
-        // Redraw the chart with the new palette when the device theme changes
         this.updateThemeSwitch();
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => this.redrawCharts());
+        this.syncThemeColorMeta();
+        // Follow device theme changes, unless the user has picked light or dark
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if (this.getThemeChoice() === 'auto') this.redrawCharts();
+        });
+
+        // Label widths change once the web font has loaded, so measure again
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => this.applyCurrencyLabels());
+        }
     }
 
     getThemeChoice() {
@@ -34,6 +51,7 @@ class WebCalculatorApp {
             // Not critical if the choice can't be remembered
         }
         this.updateThemeSwitch();
+        this.syncThemeColorMeta();
         this.redrawCharts();
     }
 
@@ -44,10 +62,24 @@ class WebCalculatorApp {
         });
     }
 
+    // Keep the mobile browser's address-bar colour in step with a manually chosen theme
+    syncThemeColorMeta() {
+        const choice = this.getThemeChoice();
+        const pageColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-page').trim();
+        document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+            if (!meta.dataset.defaultContent) meta.dataset.defaultContent = meta.content;
+            meta.content = choice === 'auto' ? meta.dataset.defaultContent : pageColor;
+        });
+    }
+
     redrawCharts() {
         if (!this.lastBreakdown) return;
-        this.updateChart(this.lastBreakdown);
-        this.updateYearlyChart(this.lastBreakdown);
+        try {
+            this.updateChart(this.lastBreakdown);
+            this.updateYearlyChart(this.lastBreakdown);
+        } catch (error) {
+            console.error('Chart redraw error:', error);
+        }
     }
 
     loadCurrency() {
@@ -67,26 +99,37 @@ class WebCalculatorApp {
         } catch (error) {
             // Not critical if the choice can't be remembered
         }
+        this.buildFormatters();
         this.applyCurrencyLabels();
         this.calculate();
         this.calculateGoal();
         this.calculateRequired();
     }
 
-    getCurrencyFormat(options = {}) {
-        return new Intl.NumberFormat('en-GB', {
+    // Formatters are reused for every amount on the page and only rebuilt when the currency changes
+    buildFormatters() {
+        const base = {
             style: 'currency',
             currency: this.currency,
             // "$" instead of "US$"; other currencies keep their standard en-GB symbol or code
-            currencyDisplay: this.currency === 'USD' ? 'narrowSymbol' : 'symbol',
-            ...options
+            currencyDisplay: this.currency === 'USD' ? 'narrowSymbol' : 'symbol'
+        };
+        this.currencyFormat = new Intl.NumberFormat('en-GB', {
+            ...base,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
         });
+        this.compactCurrencyFormat = new Intl.NumberFormat('en-GB', {
+            ...base,
+            notation: 'compact',
+            maximumFractionDigits: 1
+        });
+        this.currencySymbol = this.currencyFormat.formatToParts(0).find(part => part.type === 'currency').value;
     }
 
     applyCurrencyLabels() {
-        const symbol = this.getCurrencyFormat().formatToParts(0).find(part => part.type === 'currency').value;
         document.querySelectorAll('.input-wrapper .currency').forEach(label => {
-            label.textContent = symbol;
+            label.textContent = this.currencySymbol;
             const input = label.parentElement.querySelector('input');
             // Fit the input padding to the symbol width ("€" vs "DKK")
             if (input && label.offsetWidth) input.style.paddingLeft = `${label.offsetWidth + 24}px`;
@@ -102,62 +145,55 @@ class WebCalculatorApp {
             this.setCurrency(e.target.value);
         });
 
-        // Input change listeners for real-time calculation
-        const inputs = ['principal', 'monthly', 'rate', 'years'];
-        inputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.addEventListener('input', () => this.calculate());
-                input.addEventListener('change', () => this.calculate());
-            }
+        // Real-time calculation ('input' covers typing, pasting and the spinner buttons)
+        ['principal', 'monthly', 'rate', 'years'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', () => this.calculate());
+        });
+        ['target'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', () => this.calculateGoal());
+        });
+        ['req-target', 'req-years'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', () => this.calculateRequired());
         });
 
-        // Tab switching
-        const tabs = document.querySelectorAll('.tab');
-        tabs.forEach(tab => {
+        // Tabs: click, plus arrow keys / Home / End as in the WAI-ARIA tabs pattern
+        const tabs = [...document.querySelectorAll('.tab')];
+        tabs.forEach((tab, index) => {
             tab.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.switchTab(tab.dataset.tab);
             });
-        });
-
-        // Goal planning inputs
-        const goalInputs = ['target'];
-        goalInputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.addEventListener('input', () => this.calculateGoal());
-                input.addEventListener('change', () => this.calculateGoal());
-            }
-        });
-
-        // Required savings inputs
-        const requiredInputs = ['req-target', 'req-years'];
-        requiredInputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.addEventListener('input', () => this.calculateRequired());
-                input.addEventListener('change', () => this.calculateRequired());
-            }
+            tab.addEventListener('keydown', (e) => {
+                const keys = {
+                    ArrowRight: (index + 1) % tabs.length,
+                    ArrowLeft: (index - 1 + tabs.length) % tabs.length,
+                    Home: 0,
+                    End: tabs.length - 1
+                };
+                if (!(e.key in keys)) return;
+                e.preventDefault();
+                const next = tabs[keys[e.key]];
+                this.switchTab(next.dataset.tab);
+                next.focus();
+            });
         });
     }
 
     switchTab(tabName) {
-        // Update tab buttons
         document.querySelectorAll('.tab').forEach(tab => {
-            tab.classList.remove('active');
+            const selected = tab.dataset.tab === tabName;
+            tab.classList.toggle('active', selected);
+            tab.setAttribute('aria-selected', String(selected));
+            tab.tabIndex = selected ? 0 : -1;
         });
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
 
-        // Update tab content
         document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
+            content.classList.toggle('active', content.id === `${tabName}-content`);
         });
-        document.getElementById(`${tabName}-content`).classList.add('active');
         this.applyCurrencyLabels();
 
         // Calculate for the active tab
-        switch(tabName) {
+        switch (tabName) {
             case 'basic':
                 this.calculate();
                 break;
@@ -180,17 +216,11 @@ class WebCalculatorApp {
     }
 
     formatCurrency(amount) {
-        return this.getCurrencyFormat({
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(amount);
+        return this.currencyFormat.format(amount);
     }
 
     formatPercent(rate) {
-        return new Intl.NumberFormat('en-GB', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(rate) + '%';
+        return percentFormat.format(rate) + '%';
     }
 
     calculate() {
@@ -207,10 +237,12 @@ class WebCalculatorApp {
             });
 
             this.updateBasicResults(result);
-            const breakdown = this.addYearlyContributions(result.yearlyBreakdown, principal);
+            const breakdown = addYearlyContributions(result.yearlyBreakdown, principal);
+            this.lastBreakdown = breakdown;
+            this.updateCrossoverNote(breakdown);
+            this.updateBreakdownTable(breakdown);
             this.updateChart(breakdown);
             this.updateYearlyChart(breakdown);
-            this.updateBreakdownTable(breakdown);
         } catch (error) {
             console.error('Calculation error:', error);
         }
@@ -230,7 +262,7 @@ class WebCalculatorApp {
                 targetAmount: target
             });
 
-            document.getElementById('time-to-goal').textContent = 
+            document.getElementById('time-to-goal').textContent =
                 result.months >= 1200 ? 'Not reachable within 100 years' : `${result.years} years`;
         } catch (error) {
             console.error('Goal calculation error:', error);
@@ -265,6 +297,24 @@ class WebCalculatorApp {
         document.getElementById('effective-rate').textContent = this.formatPercent(result.effectiveAnnualRate);
     }
 
+    updateCrossoverNote(yearlyBreakdown) {
+        const note = document.getElementById('crossover-note');
+        if (!note) return;
+
+        const { text, year } = describeCrossover(yearlyBreakdown);
+        const highlight = year > 1 ? `year ${year}` : null;
+        note.textContent = '';
+        if (highlight && text.includes(highlight)) {
+            // Bold the crossover year, e.g. "From <strong>year 9</strong>, …"
+            const [before, after] = text.split(highlight);
+            const strong = document.createElement('strong');
+            strong.textContent = highlight;
+            note.append(before, strong, after);
+        } else {
+            note.textContent = text;
+        }
+    }
+
     getThemeColors() {
         const styles = getComputedStyle(document.documentElement);
         const token = name => styles.getPropertyValue(name).trim();
@@ -281,35 +331,122 @@ class WebCalculatorApp {
         };
     }
 
-    updateChart(yearlyBreakdown) {
-        const ctx = document.getElementById('growth-chart');
-        if (!ctx) return;
-
-        this.lastBreakdown = yearlyBreakdown;
-        const colors = this.getThemeColors();
+    // Options shared by both charts; each chart adds its own specifics on top
+    baseChartOptions(colors, { stacked = false, tooltipFooter } = {}) {
         const formatCurrency = amount => this.formatCurrency(amount);
-        const axisFormat = this.getCurrencyFormat({
-            notation: 'compact',
-            maximumFractionDigits: 1
-        });
-        const formatAxis = value => axisFormat.format(value);
+        const compactFormat = this.compactCurrencyFormat;
+        const callbacks = {
+            title: items => `Year ${items[0].label}`,
+            label: context => ` ${context.dataset.label}: ${formatCurrency(context.parsed.y)}`
+        };
+        if (tooltipFooter) callbacks.footer = tooltipFooter;
 
-        const labels = yearlyBreakdown.map(year => year.year);
-        const balanceData = yearlyBreakdown.map(year => year.balance);
-        const contributionData = yearlyBreakdown.map(year => year.totalContributions);
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    align: 'start',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        padding: 16,
+                        color: colors.textSecondary,
+                        font: { family: CHART_FONT, size: 13 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: colors.surface,
+                    titleColor: colors.textPrimary,
+                    bodyColor: colors.textSecondary,
+                    footerColor: colors.textPrimary,
+                    borderColor: colors.border,
+                    borderWidth: 1,
+                    padding: 12,
+                    cornerRadius: 10,
+                    usePointStyle: true,
+                    boxPadding: 6,
+                    titleFont: { family: CHART_FONT, size: 13, weight: '600' },
+                    bodyFont: { family: CHART_FONT, size: 13 },
+                    footerFont: { family: CHART_FONT, size: 13, weight: '600' },
+                    callbacks
+                }
+            },
+            scales: {
+                x: {
+                    stacked,
+                    title: {
+                        display: true,
+                        text: 'Year',
+                        color: colors.textMuted,
+                        font: { family: CHART_FONT, size: 12 }
+                    },
+                    grid: { display: false },
+                    border: { color: colors.border },
+                    ticks: {
+                        font: { family: CHART_FONT, size: 12 },
+                        color: colors.textMuted,
+                        maxRotation: 0,
+                        autoSkipPadding: 16
+                    }
+                },
+                y: {
+                    stacked,
+                    beginAtZero: true,
+                    grid: { color: colors.grid },
+                    border: { display: false },
+                    ticks: {
+                        font: { family: CHART_FONT, size: 12 },
+                        color: colors.textMuted,
+                        padding: 8,
+                        callback: value => compactFormat.format(value)
+                    }
+                }
+            }
+        };
+    }
 
-        if (this.chart) {
-            this.chart.destroy();
+    // Update an existing chart in place (no teardown/flicker), or create it the first time
+    renderChart(existing, canvasId, config) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || typeof Chart === 'undefined') return existing;
+
+        if (existing) {
+            existing.data = config.data;
+            existing.options = config.options;
+            existing.update();
+            return existing;
         }
+        return new Chart(canvas, config);
+    }
 
-        this.chart = new Chart(ctx, {
+    updateChart(yearlyBreakdown) {
+        const colors = this.getThemeColors();
+        const options = this.baseChartOptions(colors);
+        options.elements = {
+            point: {
+                radius: 0,
+                hoverRadius: 5,
+                hoverBorderWidth: 2
+            }
+        };
+
+        this.chart = this.renderChart(this.chart, 'growth-chart', {
             type: 'line',
             data: {
-                labels: labels,
+                labels: yearlyBreakdown.map(year => year.year),
                 datasets: [
                     {
                         label: 'Total balance',
-                        data: balanceData,
+                        data: yearlyBreakdown.map(year => year.balance),
                         borderColor: colors.series1,
                         backgroundColor: colors.series1Fill,
                         pointBackgroundColor: colors.series1,
@@ -320,7 +457,7 @@ class WebCalculatorApp {
                     },
                     {
                         label: 'Total contributions',
-                        data: contributionData,
+                        data: yearlyBreakdown.map(year => year.totalContributions),
                         borderColor: colors.series2,
                         backgroundColor: colors.series2,
                         pointBackgroundColor: colors.series2,
@@ -331,146 +468,25 @@ class WebCalculatorApp {
                     }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        align: 'start',
-                        labels: {
-                            usePointStyle: true,
-                            pointStyle: 'circle',
-                            boxWidth: 8,
-                            boxHeight: 8,
-                            padding: 16,
-                            color: colors.textSecondary,
-                            font: {
-                                family: 'Inter',
-                                size: 13
-                            }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: colors.surface,
-                        titleColor: colors.textPrimary,
-                        bodyColor: colors.textSecondary,
-                        borderColor: colors.border,
-                        borderWidth: 1,
-                        padding: 12,
-                        cornerRadius: 10,
-                        usePointStyle: true,
-                        boxPadding: 6,
-                        titleFont: { family: 'Inter', size: 13, weight: '600' },
-                        bodyFont: { family: 'Inter', size: 13 },
-                        callbacks: {
-                            title: items => `Year ${items[0].label}`,
-                            label: context => ` ${context.dataset.label}: ${formatCurrency(context.parsed.y)}`
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Year',
-                            color: colors.textMuted,
-                            font: {
-                                family: 'Inter',
-                                size: 12
-                            }
-                        },
-                        grid: {
-                            display: false
-                        },
-                        border: {
-                            color: colors.border
-                        },
-                        ticks: {
-                            font: {
-                                family: 'Inter',
-                                size: 12
-                            },
-                            color: colors.textMuted,
-                            maxRotation: 0,
-                            autoSkipPadding: 16
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: colors.grid
-                        },
-                        border: {
-                            display: false
-                        },
-                        ticks: {
-                            font: {
-                                family: 'Inter',
-                                size: 12
-                            },
-                            color: colors.textMuted,
-                            padding: 8,
-                            callback: formatAxis
-                        }
-                    }
-                },
-                elements: {
-                    point: {
-                        radius: 0,
-                        hoverRadius: 5,
-                        hoverBorderWidth: 2
-                    }
-                }
-            }
+            options
         });
-    }
-
-    // Amount paid in during each year (excludes the starting amount)
-    addYearlyContributions(yearlyBreakdown, principal) {
-        return yearlyBreakdown.map((year, i) => ({
-            ...year,
-            yearlyContribution: year.totalContributions - (i === 0 ? principal : yearlyBreakdown[i - 1].totalContributions)
-        }));
-    }
-
-    updateCrossoverNote(yearlyBreakdown) {
-        const note = document.getElementById('crossover-note');
-        if (!note) return;
-
-        const crossover = yearlyBreakdown.find(year => year.yearlyInterest > year.yearlyContribution);
-        if (!crossover) {
-            note.textContent = 'Your contributions are larger than the interest earned in every year of this period.';
-        } else if (crossover.year === 1) {
-            note.textContent = 'Interest earns more than you pay in from the very first year.';
-        } else {
-            note.innerHTML = `From <strong>year ${crossover.year}</strong>, the interest earned each year is larger than what you pay in.`;
-        }
     }
 
     updateYearlyChart(yearlyBreakdown) {
-        const ctx = document.getElementById('yearly-chart');
-        if (!ctx) return;
-
-        this.updateCrossoverNote(yearlyBreakdown);
-
         const colors = this.getThemeColors();
         const formatCurrency = amount => this.formatCurrency(amount);
-        const axisFormat = this.getCurrencyFormat({
-            notation: 'compact',
-            maximumFractionDigits: 1
+        const options = this.baseChartOptions(colors, {
+            stacked: true,
+            tooltipFooter: items => `Growth: ${formatCurrency(items.reduce((sum, item) => sum + item.parsed.y, 0))}`
         });
+        options.datasets = {
+            bar: {
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
+            }
+        };
 
-        if (this.yearlyChart) {
-            this.yearlyChart.destroy();
-        }
-
-        this.yearlyChart = new Chart(ctx, {
+        this.yearlyChart = this.renderChart(this.yearlyChart, 'yearly-chart', {
             type: 'bar',
             data: {
                 labels: yearlyBreakdown.map(year => year.year),
@@ -495,87 +511,7 @@ class WebCalculatorApp {
                     }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                datasets: {
-                    bar: {
-                        barPercentage: 0.8,
-                        categoryPercentage: 0.9
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        align: 'start',
-                        labels: {
-                            usePointStyle: true,
-                            pointStyle: 'circle',
-                            boxWidth: 8,
-                            boxHeight: 8,
-                            padding: 16,
-                            color: colors.textSecondary,
-                            font: { family: 'Inter', size: 13 }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: colors.surface,
-                        titleColor: colors.textPrimary,
-                        bodyColor: colors.textSecondary,
-                        footerColor: colors.textPrimary,
-                        borderColor: colors.border,
-                        borderWidth: 1,
-                        padding: 12,
-                        cornerRadius: 10,
-                        usePointStyle: true,
-                        boxPadding: 6,
-                        titleFont: { family: 'Inter', size: 13, weight: '600' },
-                        bodyFont: { family: 'Inter', size: 13 },
-                        footerFont: { family: 'Inter', size: 13, weight: '600' },
-                        callbacks: {
-                            title: items => `Year ${items[0].label}`,
-                            label: context => ` ${context.dataset.label}: ${formatCurrency(context.parsed.y)}`,
-                            footer: items => `Growth: ${formatCurrency(items.reduce((sum, item) => sum + item.parsed.y, 0))}`
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        stacked: true,
-                        title: {
-                            display: true,
-                            text: 'Year',
-                            color: colors.textMuted,
-                            font: { family: 'Inter', size: 12 }
-                        },
-                        grid: { display: false },
-                        border: { color: colors.border },
-                        ticks: {
-                            font: { family: 'Inter', size: 12 },
-                            color: colors.textMuted,
-                            maxRotation: 0,
-                            autoSkipPadding: 16
-                        }
-                    },
-                    y: {
-                        stacked: true,
-                        beginAtZero: true,
-                        grid: { color: colors.grid },
-                        border: { display: false },
-                        ticks: {
-                            font: { family: 'Inter', size: 12 },
-                            color: colors.textMuted,
-                            padding: 8,
-                            callback: value => axisFormat.format(value)
-                        }
-                    }
-                }
-            }
+            options
         });
     }
 
@@ -583,19 +519,15 @@ class WebCalculatorApp {
         const tbody = document.querySelector('#breakdown-table tbody');
         if (!tbody) return;
 
-        tbody.innerHTML = '';
-
-        yearlyBreakdown.forEach(year => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
+        tbody.innerHTML = yearlyBreakdown.map(year => `
+            <tr>
                 <td>Year ${year.year}</td>
                 <td><span class="swatch swatch-contrib" aria-hidden="true"></span>${this.formatCurrency(year.yearlyContribution)}</td>
                 <td><span class="swatch swatch-interest" aria-hidden="true"></span>${this.formatCurrency(year.yearlyInterest)}</td>
                 <td>${this.formatCurrency(year.totalContributions)}</td>
                 <td class="balance-cell">${this.formatCurrency(year.balance)}</td>
-            `;
-            tbody.appendChild(row);
-        });
+            </tr>
+        `).join('');
     }
 }
 
