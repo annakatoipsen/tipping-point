@@ -9,12 +9,20 @@
     "dev": "node --watch index.js",
     "test": "node --test"
   },
-  "keywords": ["finance", "calculator", "compound-interest", "wealth"],
+  "keywords": [
+    "finance",
+    "calculator",
+    "compound-interest",
+    "wealth"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "readline-sync": "^1.4.10",
     "chalk": "^5.3.0",
+    "readline-sync": "^1.4.10",
     "table": "^6.8.1"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
   }
 }

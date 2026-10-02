@@ -296,6 +296,10 @@
         </main>
     </div>
 
-    <script src="web-calculator.js" type="module"></script>
+    <script type="module">
+        // Module scripts run after the page is parsed, so the DOM is ready here
+        import { WebCalculatorApp } from './web-calculator.js';
+        new WebCalculatorApp();
+    </script>
 </body>
 </html>

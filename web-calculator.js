@@ -8,7 +8,7 @@ const percentFormat = new Intl.NumberFormat('en-GB', {
 
 const CHART_FONT = 'Inter';
 
-class WebCalculatorApp {
+export class WebCalculatorApp {
     constructor() {
         this.chart = null;
         this.yearlyChart = null;
@@ -541,7 +541,3 @@ class WebCalculatorApp {
     }
 }
 
-// Initialize the app when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new WebCalculatorApp();
-});
