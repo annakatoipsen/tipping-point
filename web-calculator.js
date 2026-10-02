@@ -18,7 +18,7 @@ class WebCalculatorApp {
         document.getElementById('currency-select').value = this.currency;
         this.applyCurrencyLabels();
         this.initializeEventListeners();
-        this.calculate(); // Initial calculation
+        this.calculateAll(); // Initial calculation
 
         this.updateThemeSwitch();
         this.syncThemeColorMeta();
@@ -101,9 +101,7 @@ class WebCalculatorApp {
         }
         this.buildFormatters();
         this.applyCurrencyLabels();
-        this.calculate();
-        this.calculateGoal();
-        this.calculateRequired();
+        this.calculateAll();
     }
 
     // Formatters are reused for every amount on the page and only rebuilt when the currency changes
@@ -146,8 +144,9 @@ class WebCalculatorApp {
         });
 
         // Real-time calculation ('input' covers typing, pasting and the spinner buttons)
+        // The shared fields at the top feed all three tabs
         ['principal', 'monthly', 'rate', 'years'].forEach(id => {
-            document.getElementById(id)?.addEventListener('input', () => this.calculate());
+            document.getElementById(id)?.addEventListener('input', () => this.calculateAll());
         });
         ['target'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', () => this.calculateGoal());
@@ -223,6 +222,12 @@ class WebCalculatorApp {
         return percentFormat.format(rate) + '%';
     }
 
+    calculateAll() {
+        this.calculate();
+        this.calculateGoal();
+        this.calculateRequired();
+    }
+
     calculate() {
         const { principal, monthly, rate, years } = this.getInputValues();
 
@@ -262,8 +267,11 @@ class WebCalculatorApp {
                 targetAmount: target
             });
 
-            document.getElementById('time-to-goal').textContent =
-                result.months >= 1200 ? 'Not reachable within 100 years' : `${result.years} years`;
+            let text;
+            if (result.months === 0) text = 'Already reached';
+            else if (result.months >= 1200) text = 'Not reachable within 100 years';
+            else text = `${result.years} ${result.years === 1 ? 'year' : 'years'}`;
+            document.getElementById('time-to-goal').textContent = text;
         } catch (error) {
             console.error('Goal calculation error:', error);
         }
@@ -284,7 +292,9 @@ class WebCalculatorApp {
                 principal
             });
 
-            document.getElementById('required-monthly').textContent = this.formatCurrency(required);
+            // Zero or less means the starting amount reaches the target without further saving
+            document.getElementById('required-monthly').textContent =
+                required > 0 ? this.formatCurrency(required) : 'Nothing extra needed';
         } catch (error) {
             console.error('Required savings calculation error:', error);
         }
