@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Wealth Calculator">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c3a62"/>
+      <stop offset="1" stop-color="#10203a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.8" cy="0.2" r="0.65">
+      <stop offset="0" stop-color="#3987e5" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#3987e5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#tile)"/>
+  <rect width="64" height="64" rx="16" fill="url(#glow)"/>
+  <!-- balance: compound growth curve with a soft halo -->
+  <path d="M12 49 C 30 48, 42 37, 49 17" fill="none" stroke="#3987e5" stroke-opacity="0.35" stroke-width="10" stroke-linecap="round"/>
+  <!-- contributions: straight dashed line -->
+  <path d="M12 49 L 50 39" fill="none" stroke="#eb6834" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="4.5 4.5"/>
+  <path d="M12 49 C 30 48, 42 37, 49 17" fill="none" stroke="#7ab2f3" stroke-width="4.5" stroke-linecap="round"/>
+  <circle cx="49" cy="17" r="5.5" fill="#ffffff" stroke="#3987e5" stroke-width="3"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="15.5" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>
+</svg>

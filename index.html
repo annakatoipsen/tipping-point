@@ -1,43 +1,86 @@
 <!DOCTYPE html>
-<html lang="da">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formue Beregner</title>
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f4f3ef" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f0f0e" media="(prefers-color-scheme: dark)">
+    <title>Wealth Calculator</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <script>
+        // Apply a saved theme before first paint to avoid a flash of the wrong theme
+        try {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+        } catch (error) {}
+    </script>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Formue Beregner</h1>
-            <p>Simple renters-rente beregninger</p>
+            <img class="logo" src="logo.svg" alt="" width="44" height="44">
+            <div>
+                <h1>Wealth Calculator</h1>
+                <p>Simple compound interest calculations</p>
+            </div>
+            <div class="header-controls">
+            <div class="currency-picker">
+                <label for="currency-select">Currency</label>
+                <select id="currency-select">
+                    <option value="DKK" selected>DKK – Danish krone</option>
+                    <option value="EUR">EUR – Euro</option>
+                    <option value="USD">USD – US dollar</option>
+                    <option value="GBP">GBP – British pound</option>
+                    <option value="SEK">SEK – Swedish krona</option>
+                    <option value="NOK">NOK – Norwegian krone</option>
+                    <option value="CHF">CHF – Swiss franc</option>
+                </select>
+            </div>
+            <div class="theme-picker">
+                <span class="control-label" id="theme-label">Theme</span>
+                <div class="theme-switch" role="radiogroup" aria-labelledby="theme-label">
+                    <button type="button" role="radio" data-theme-choice="auto" aria-label="Auto (match device)" title="Auto (match device)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor"/></svg>
+                    </button>
+                    <button type="button" role="radio" data-theme-choice="light" aria-label="Light" title="Light">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                    </button>
+                    <button type="button" role="radio" data-theme-choice="dark" aria-label="Dark" title="Dark">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </button>
+                </div>
+            </div>
+            </div>
         </header>
 
         <main>
             <div class="calculator-section">
+                <h2 class="section-title">Your assumptions</h2>
                 <div class="input-grid">
                     <div class="input-group">
-                        <label for="principal">Startbeløb</label>
+                        <label for="principal">Starting amount</label>
                         <div class="input-wrapper">
-                            <span class="currency">kr</span>
+                            <span class="currency">DKK</span>
                             <input type="number" id="principal" value="75000" min="0" step="1000">
                         </div>
                     </div>
 
                     <div class="input-group">
-                        <label for="monthly">Månedlig Indbetaling</label>
+                        <label for="monthly">Monthly contribution</label>
                         <div class="input-wrapper">
-                            <span class="currency">kr</span>
+                            <span class="currency">DKK</span>
                             <input type="number" id="monthly" value="3000" min="0" step="500">
                         </div>
                     </div>
 
                     <div class="input-group">
-                        <label for="rate">Årligt Afkast</label>
+                        <label for="rate">Annual return</label>
                         <div class="input-wrapper">
                             <input type="number" id="rate" value="7" min="0" max="100" step="0.1">
                             <span class="percent">%</span>
@@ -45,56 +88,69 @@
                     </div>
 
                     <div class="input-group">
-                        <label for="years">År</label>
+                        <label for="years">Years</label>
                         <div class="input-wrapper">
                             <input type="number" id="years" value="30" min="1" max="100" step="1">
+                            <span class="unit">yrs</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="tabs">
-                    <button class="tab active" data-tab="basic">Grundlæggende</button>
-                    <button class="tab" data-tab="goal">Målplanlægning</button>
-                    <button class="tab" data-tab="required">Nødvendig Opsparing</button>
+                <div class="tabs" role="tablist">
+                    <button class="tab active" data-tab="basic">Overview</button>
+                    <button class="tab" data-tab="goal">Goal planning</button>
+                    <button class="tab" data-tab="required">Required savings</button>
                 </div>
 
                 <div class="tab-content active" id="basic-content">
                     <div class="results-section">
                         <div class="result-card primary">
-                            <h3>Slutsaldo</h3>
-                            <div class="amount" id="final-balance">0 kr</div>
+                            <h3>Final balance</h3>
+                            <div class="amount" id="final-balance">DKK 0</div>
                         </div>
                         
                         <div class="result-grid">
                             <div class="result-card">
-                                <h4>Samlede Indbetalinger</h4>
-                                <div class="amount small" id="total-contributions">0 kr</div>
+                                <h4>Total contributions</h4>
+                                <div class="amount small" id="total-contributions">DKK 0</div>
                             </div>
                             <div class="result-card">
-                                <h4>Samlede Renter</h4>
-                                <div class="amount small" id="total-interest">0 kr</div>
+                                <h4>Total interest</h4>
+                                <div class="amount small" id="total-interest">DKK 0</div>
                             </div>
                             <div class="result-card">
-                                <h4>Effektiv Rente</h4>
+                                <h4>Effective annual rate</h4>
                                 <div class="amount small" id="effective-rate">0%</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="chart-section">
-                        <canvas id="growth-chart" width="800" height="400"></canvas>
+                        <h3>Growth over time</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="growth-chart" role="img" aria-label="Chart of balance and contributions year by year"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-section">
+                        <h3>Contributions vs. interest per year</h3>
+                        <p class="chart-note" id="crossover-note"></p>
+                        <div class="chart-wrapper">
+                            <canvas id="yearly-chart" role="img" aria-label="Stacked bar chart of the amount paid in and the interest earned in each year"></canvas>
+                        </div>
                     </div>
 
                     <div class="breakdown-section">
-                        <h3>År-for-År Opdeling</h3>
+                        <h3>Year-by-year breakdown</h3>
                         <div class="breakdown-table-wrapper">
                             <table class="breakdown-table" id="breakdown-table">
                                 <thead>
                                     <tr>
-                                        <th>År</th>
-                                        <th>Saldo</th>
-                                        <th>Renter</th>
-                                        <th>Indbetalinger</th>
+                                        <th>Year</th>
+                                        <th>Paid in this year</th>
+                                        <th>Interest this year</th>
+                                        <th>Total paid in</th>
+                                        <th>Balance</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -106,42 +162,45 @@
                 <div class="tab-content" id="goal-content">
                     <div class="goal-inputs">
                         <div class="input-group">
-                            <label for="target">Målbeløb</label>
+                            <label for="target">Target amount</label>
                             <div class="input-wrapper">
-                                <span class="currency">kr</span>
+                                <span class="currency">DKK</span>
                                 <input type="number" id="target" value="7500000" min="1" step="10000">
                             </div>
                         </div>
                     </div>
                     <div class="goal-results">
                         <div class="result-card primary">
-                            <h3>Tid til Mål</h3>
-                            <div class="amount" id="time-to-goal">0 år</div>
+                            <h3>Time to goal</h3>
+                            <div class="amount" id="time-to-goal">0 years</div>
                         </div>
+                        <p class="hint">Uses the starting amount, monthly contribution and return above.</p>
                     </div>
                 </div>
 
                 <div class="tab-content" id="required-content">
                     <div class="required-inputs">
                         <div class="input-group">
-                            <label for="req-target">Målbeløb</label>
+                            <label for="req-target">Target amount</label>
                             <div class="input-wrapper">
-                                <span class="currency">kr</span>
+                                <span class="currency">DKK</span>
                                 <input type="number" id="req-target" value="7500000" min="1" step="10000">
                             </div>
                         </div>
                         <div class="input-group">
-                            <label for="req-years">Tidsramme</label>
+                            <label for="req-years">Time frame</label>
                             <div class="input-wrapper">
                                 <input type="number" id="req-years" value="30" min="1" max="100" step="1">
+                                <span class="unit">yrs</span>
                             </div>
                         </div>
                     </div>
                     <div class="required-results">
                         <div class="result-card primary">
-                            <h3>Nødvendig Månedlig Opsparing</h3>
-                            <div class="amount" id="required-monthly">0 kr</div>
+                            <h3>Required monthly savings</h3>
+                            <div class="amount" id="required-monthly">DKK 0</div>
                         </div>
+                        <p class="hint">Uses the starting amount and return above.</p>
                     </div>
                 </div>
             </div>

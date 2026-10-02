@@ -46,7 +46,8 @@ class CompoundInterestCalculator {
       totalContributions: Math.round(totalContributions * 100) / 100,
       totalInterest: Math.round(totalInterest * 100) / 100,
       yearlyBreakdown,
-      effectiveAnnualRate: Math.round(((finalBalance / totalContributions) ** (1/years) - 1) * 10000) / 100
+      // Annual yield after compounding: (1 + r/n)^n - 1
+      effectiveAnnualRate: Math.round(((1 + annualRate / 100 / compoundingFrequency) ** compoundingFrequency - 1) * 10000) / 100
     };
   }
 
