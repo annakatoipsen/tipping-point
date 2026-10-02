@@ -1,4 +1,12 @@
-# Smart Compound Interest Calculator
+# Tipping Point – Compound Interest Calculator
+
+**Use it online: https://annakatoipsen.github.io/tipping-point/**
+
+See how your savings grow, and find your *tipping point*: the year the interest you earn becomes larger than what you pay in.
+
+This repository contains the web app (`index.html`) and a command-line version.
+
+## Command-line version
 
 A powerful, interactive CLI tool for advanced compound interest calculations with smart features like goal planning, scenario comparison, and inflation analysis.
 

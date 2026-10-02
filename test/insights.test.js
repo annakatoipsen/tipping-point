@@ -32,7 +32,7 @@ describe('describeCrossover', () => {
 
     const { text, year } = describeCrossover(breakdown);
     assert.equal(year, 9);
-    assert.match(text, /From year 9/);
+    assert.match(text, /tipping point is year 9/);
   });
 
   test('reports year 1 when a large starting amount out-earns contributions immediately', () => {

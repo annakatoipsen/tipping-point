@@ -312,7 +312,7 @@ export class WebCalculatorApp {
         if (!note) return;
 
         const { text, year } = describeCrossover(yearlyBreakdown);
-        const highlight = year > 1 ? `year ${year}` : null;
+        const highlight = year ? `year ${year}` : null;
         note.textContent = '';
         if (highlight && text.includes(highlight)) {
             // Bold the crossover year, e.g. "From <strong>year 9</strong>, …"

@@ -31,10 +31,10 @@ export function describeCrossover(yearlyBreakdown) {
 
   const crossover = yearlyBreakdown.find(year => year.yearlyInterest > year.yearlyContribution);
   if (!crossover) {
-    return { text: 'Your contributions are larger than the interest earned in every year of this period.', year: null };
+    return { text: 'You don’t reach your tipping point in this period: your contributions are larger than the interest earned in every year.', year: null };
   }
   if (crossover.year === 1) {
-    return { text: 'Interest earns more than you pay in from the very first year.', year: 1 };
+    return { text: 'Your tipping point is year 1: interest earns more than you pay in from the very first year.', year: 1 };
   }
-  return { text: `From year ${crossover.year}, the interest earned each year is larger than what you pay in.`, year: crossover.year };
+  return { text: `Your tipping point is year ${crossover.year}: from then on, the interest earned each year is larger than what you pay in.`, year: crossover.year };
 }
