@@ -6,8 +6,54 @@
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#f4f3ef" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#0f0f0e" media="(prefers-color-scheme: dark)">
-    <title>Wealth Calculator</title>
+    <title>Compound Interest Calculator – Wealth Calculator</title>
+    <meta name="description" content="Free compound interest calculator. See how your savings grow with monthly contributions, when you reach a goal, and how much to save each month.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://annakatoipsen.github.io/wealth-calculator/">
     <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+    <!-- Link previews (Facebook, LinkedIn, Slack, iMessage, X …) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Wealth Calculator">
+    <meta property="og:title" content="Compound Interest Calculator – Wealth Calculator">
+    <meta property="og:description" content="Free compound interest calculator. See how your savings grow with monthly contributions, when you reach a goal, and how much to save each month.">
+    <meta property="og:url" content="https://annakatoipsen.github.io/wealth-calculator/">
+    <meta property="og:image" content="https://annakatoipsen.github.io/wealth-calculator/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Wealth Calculator – compound interest calculator with a growth chart">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!-- Structured data so search engines understand this is a free finance tool -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Wealth Calculator",
+        "url": "https://annakatoipsen.github.io/wealth-calculator/",
+        "image": "https://annakatoipsen.github.io/wealth-calculator/og-image.png",
+        "alternateName": "Compound Interest Calculator",
+        "description": "Free compound interest calculator. See how your savings grow with monthly contributions, when you reach a goal, and how much to save each month.",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript",
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "featureList": [
+            "Compound interest with monthly contributions",
+            "Year-by-year breakdown of contributions and interest",
+            "Time to reach a savings goal",
+            "Required monthly savings for a target amount",
+            "Multiple currencies"
+        ]
+    }
+    </script>
     <script>
         // Apply a saved theme before first paint to avoid a flash of the wrong theme
         try {
@@ -19,7 +65,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
 </head>
 <body>
     <div class="container">
@@ -27,7 +73,7 @@
             <img class="logo" src="logo.svg" alt="" width="44" height="44">
             <div>
                 <h1>Wealth Calculator</h1>
-                <p>Simple compound interest calculations</p>
+                <p>Free compound interest calculator</p>
             </div>
             <div class="header-controls">
             <div class="currency-picker">
@@ -204,6 +250,49 @@
                     </div>
                 </div>
             </div>
+
+            <section class="info-section" aria-labelledby="about-heading">
+                <h2 id="about-heading">How compound interest works</h2>
+                <p>
+                    Compound interest means you earn a return not only on the money you put in, but also on the
+                    return you have already earned. In the first years most of the growth comes from your own
+                    contributions; over time the interest itself starts doing most of the work, which is why the
+                    balance curve bends upwards.
+                </p>
+                <p>
+                    This calculator compounds monthly: each month your contribution is added and the balance then
+                    grows by one twelfth of the annual return. The <strong>effective annual rate</strong> shows what
+                    that monthly compounding adds up to over a year – for example, 7% compounded monthly is
+                    <span class="nowrap">(1 + 0.07 / 12)<sup>12</sup> − 1 ≈ 7.23%</span> per year.
+                </p>
+
+                <h2>What you can calculate</h2>
+                <ul class="feature-list">
+                    <li><strong>Overview</strong> – your final balance, how much you paid in, how much came from interest, and a year-by-year breakdown.</li>
+                    <li><strong>Goal planning</strong> – how many years it takes to reach a target amount with your current savings.</li>
+                    <li><strong>Required savings</strong> – how much you need to save each month to reach a target within a set time.</li>
+                </ul>
+
+                <h2>Frequently asked questions</h2>
+                <div class="faq">
+                    <details>
+                        <summary>Does the calculator include taxes, fees or inflation?</summary>
+                        <p>No. All results are before tax, fees and inflation, and assume the same return every year. Real investments go up and down, so treat the numbers as an estimate.</p>
+                    </details>
+                    <details>
+                        <summary>Does changing the currency convert my amounts?</summary>
+                        <p>No. The currency only changes how amounts are shown. Enter your figures in the currency you choose.</p>
+                    </details>
+                    <details>
+                        <summary>Are my numbers saved or sent anywhere?</summary>
+                        <p>No. All calculations run in your browser. Only your chosen currency and theme are remembered on your own device.</p>
+                    </details>
+                    <details>
+                        <summary>When does interest overtake my contributions?</summary>
+                        <p>The “Contributions vs. interest per year” chart shows this. The note above the chart tells you the first year in which the interest earned is larger than what you pay in that year.</p>
+                    </details>
+                </div>
+            </section>
         </main>
     </div>
 
